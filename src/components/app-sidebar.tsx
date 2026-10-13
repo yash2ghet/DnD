@@ -50,6 +50,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { authClient } from "@/lib/auth-client"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog"
 
 const planningItems = [
   {
@@ -289,59 +291,135 @@ function WorkspaceMenu() {
 }
 
 function UserMenu() {
+  const { state } = useSidebar()
+  const { data: session } = authClient.useSession()
+
+  const [logoutOpen, setLogoutOpen] = React.useState(false)
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false)
+
+  const user = session?.user
+
+  const name = user?.name || "User"
+  const email = user?.email || ""
+
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
+
+      const { error } = await authClient.signOut()
+
+      if (error) {
+        console.error("Logout failed:", error)
+        setIsLoggingOut(false)
+        return
+      }
+
+      window.location.replace("/login")
+    } catch (error) {
+      console.error("Logout failed:", error)
+      setIsLoggingOut(false)
+    }
+  }
+
   return (
-    <DropdownMenu>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton size="lg" tooltip="Yashvi" />
-            }
+    <>
+      <DropdownMenu>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenuTrigger
+              render={
+                <SidebarMenuButton size="lg" tooltip={name} />
+              }
+            >
+              <Avatar className="size-8 rounded-lg">
+                {user?.image && (
+                  <AvatarImage
+                    src={user.image}
+                    alt={name}
+                  />
+                )}
+
+                <AvatarFallback className="rounded-lg">
+                  {initials || "U"}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">
+                  {name}
+                </span>
+
+                <span className="truncate text-xs text-sidebar-foreground/60">
+                  {email}
+                </span>
+              </div>
+
+              <ChevronsUpDown className="ml-auto size-4 opacity-60" />
+            </DropdownMenuTrigger>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
+        <DropdownMenuContent
+          align="end"
+          side={state === "collapsed" ? "right" : "top"}
+          className="w-52"
+        >
+          <DropdownMenuItem
+            className="cursor-pointer text-destructive focus:text-destructive"
+            onClick={() => setLogoutOpen(true)}
           >
-            <Avatar className="size-8 rounded-lg">
-              <AvatarImage
-                src="YOUR_IMAGE_URL"
-                alt="Yashvi"
-              />
-              <AvatarFallback className="rounded-lg">
-                Y
-              </AvatarFallback>
-            </Avatar>
+            <LogOut className="size-4" />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">Yashvi</span>
-              <span className="truncate text-xs text-sidebar-foreground/60">
-                manager
-              </span>
-            </div>
-
-            <ChevronsUpDown className="ml-auto size-4 opacity-60" />
-          </DropdownMenuTrigger>
-        </SidebarMenuItem>
-      </SidebarMenu>
-
-      <DropdownMenuContent
-        align="end"
-        side="right"
-        className="w-52"
+      <AlertDialog
+        open={logoutOpen}
+        onOpenChange={(open) => {
+          if (!isLoggingOut) {
+            setLogoutOpen(open)
+          }
+        }}
       >
-        <DropdownMenuItem>
-          <User />
-          Profile
-        </DropdownMenuItem>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Are you sure you want to log out?
+            </AlertDialogTitle>
 
-        <DropdownMenuItem>
-          <Settings />
-          Settings
-        </DropdownMenuItem>
+            <AlertDialogDescription>
+              You will need to sign in again to access your dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-        <DropdownMenuSeparator />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoggingOut}>
+              Cancel
+            </AlertDialogCancel>
 
-        <DropdownMenuItem>
-          <LogOut />
-          Log out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault()
+                handleLogout()
+              }}
+              disabled={isLoggingOut}
+              className="bg-accent-soft text-primary hover:bg-accent-soft/90"
+            >
+              {isLoggingOut ? "Logging out..." : "Log out"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

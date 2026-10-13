@@ -1,7 +1,11 @@
 "use client";
 
-import { LineChart, lineClasses } from '@mui/x-charts/LineChart';
-// import Box from '@mui/material/Box';
+import { axisClasses } from "@mui/x-charts/ChartsAxis";
+import {
+  LineChart,
+  lineClasses,
+} from "@mui/x-charts/LineChart";
+
 import {
   Card,
   CardContent,
@@ -9,21 +13,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const margin = { right: 24 };
-const uData = [4000, 3000, 2000, 2780, 1890, 2390, 3490];
-const pData = [2400, 1398, 9800, 3908, 4800, 3800, 4300];
-const amtData = [2400, 2210, 0, 2000, 2181, 2500, 2100];
-const xLabels = [
-  'Page A',
-  'Page B',
-  'Page C',
-  'Page D',
-  'Page E',
-  'Page F',
-  'Page G',
-];
+type Props = {
+  labels: string[];
+  seriesData: {
+    data: number[];
+    label: string;
+    area: true;
+    stack: string;
+  }[];
+};
 
-export default function StackedAreaChart() {
+const margin = { right: 24 };
+
+export default function StackedAreaChart({
+  labels,
+  seriesData,
+}: Props) {
   return (
     <Card className="min-w-0 shadow-none">
       <CardHeader>
@@ -35,31 +40,36 @@ export default function StackedAreaChart() {
         </p>
       </CardHeader>
 
-        <CardContent className="px-2 sm:px-4">
-            <div className="h-[300px] w-full">
-                <LineChart
-                    series={[
-                    { data: uData, label: 'uv', area: true, stack: 'total' },
-                    { data: pData, label: 'pv', area: true, stack: 'total' },
-                    {
-                        data: amtData,
-                        label: 'amt',
-                        area: true,
-                        stack: 'total',
-                    },
-                    ]}
-                    xAxis={[{ scaleType: 'point', data: xLabels, height: 28 }]}
-                    yAxis={[{ width: 50 }]}
-                    sx={{
-                    [`& .${lineClasses.line}`]: {
-                        display: 'none',
-                    },
-                    }}
-                    margin={margin}
-                    height={300}
-                />
-            </div>
-        </CardContent>
+      <CardContent className="px-2 sm:px-4 text-foreground">
+        <div className="h-[300px] w-full">
+          <LineChart
+            series={seriesData}
+            xAxis={[
+              {
+                scaleType: "point",
+                data: labels,
+                height: 28,
+              },
+            ]}
+            yAxis={[{ width: 50 }]}
+            sx={{
+              [`& .${lineClasses.line}`]: {
+                display: "none",
+              },
+              [`& .${axisClasses.tickLabel}`]: { fill: "currentColor" },
+              [`& .${axisClasses.line}, & .${axisClasses.tick}`]: { stroke: "currentColor" },
+              "& .MuiChartsLegend-root, & .MuiChartsLegend-root *": {
+                color: "#fff",
+              },
+              "& .MuiChartsLegend-root text": {
+                fill: "#fff",
+              },
+            }}
+            margin={margin}
+            height={300}
+          />
+        </div>
+      </CardContent>
     </Card>
   );
 }

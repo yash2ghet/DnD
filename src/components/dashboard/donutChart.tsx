@@ -8,12 +8,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const data = [
-  { label: "Group A", value: 400, color: "#0088FE" },
-  { label: "Group B", value: 300, color: "#00C49F" },
-  { label: "Group C", value: 300, color: "#FFBB28" },
-  { label: "Group D", value: 200, color: "#FF8042" },
-];
+type Props = {
+  data: {
+    label: string;
+    value: number;
+    color?: string;
+  }[];
+};
 
 const settings = {
   margin: { right: 5 },
@@ -22,7 +23,7 @@ const settings = {
   hideLegend: true,
 };
 
-export default function DonutChart() {
+export default function DonutChart({ data }: Props) {
   return (
     <Card>
       <CardHeader>

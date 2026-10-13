@@ -1,77 +1,183 @@
-// // export default function DashboardPage() {
-// //   return <div className="p-6">Dashboard</div>
-// // }
-
 "use client";
 
-import { useState } from "react";
-import { DragDropProvider } from "@dnd-kit/react";
+import {
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  Users,
+} from "lucide-react";
 
-import Draggable from "../../../components/draggable";
-import Droppable from "../../../components/droppable";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
 
-export default function App() {
-  const targets = ["A", "B", "C"];
+import { useEffect, useState } from "react";
+import { getDashboardData } from "../../../../lib/dashboard-api";
+import type { DashboardData } from "../../../types/dashboard";
 
-  const [target, setTarget] = useState<string | undefined>();
+import DonutChart from "@/components/dashboard/donutChart";
+import BarChartCard from "@/components/dashboard/barChart";
+import StackedAreaChart from "@/components/dashboard/lineChart";
 
-  const draggable = (
-    <Draggable id="draggable">
-      Drag me
-    </Draggable>
-  );
+export default function Dashboard() {
+
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = () => {
+      getDashboardData()
+        .then(setData)
+        .catch(() => setError("Failed to load dashboard data."))
+        .finally(() => setLoading(false));
+    };
+
+    fetchData();
+
+    const interval = setInterval(fetchData, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return <main className="p-6">Loading dashboard...</main>;
+  }
+
+  if (error || !data) {
+    return <main className="p-6">{error ?? "No dashboard data available."}</main>;
+  }
+
+  const stats = [
+    {
+      title: "Total Members",
+      value: data.stats.totalMembers.toLocaleString(),
+      description: "Registered members",
+      icon: Users,
+    },
+    {
+      title: "Total Tasks",
+      value: data.stats.totalTasks.toLocaleString(),
+      description: "All tasks",
+      icon: ClipboardList,
+    },
+    {
+      title: "Completed",
+      value: data.stats.completed.toLocaleString(),
+      description: `${data.stats.completedPercentage}% of total tasks`,
+      icon: CheckCircle2,
+    },
+    {
+      title: "Pending",
+      value: data.stats.pending.toLocaleString(),
+      description: `${data.stats.pendingPercentage}% of total tasks`,
+      icon: Clock3,
+    },
+  ];
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-black p-10">
-      <h1 className="text-2xl font-bold text-white">
-        dnd-kit Demo
-      </h1>
+    <main className="min-h-full overflow-y-auto bg-muted/40 p-6 pb-10">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Dashboard
+          </h1>
 
-      <DragDropProvider
-        onBeforeDragStart={(event) => {
-          // Optionally prevent dragging
-          // if (shouldPreventDrag(event.operation.source)) {
-          //   event.preventDefault();
-          // }
-          console.log("Before drag starts:", event.operation.source);
-        }}
-
-        onDragStart={({operation}) => {
-          console.log('Started dragging', operation.source?.id);
-        }}
-        
-        onDragMove={({operation}) => {
-          const {position} = operation;
-          console.log('Current position:', position);
-        }}
-
-        onDragOver={({operation}) => {
-          const {source, target} = operation;
-          console.log(`${source?.id} is over ${target?.id}`);
-        }}
-
-        onDragEnd={({operation}) => {
-          const {source, target} = operation;
-          
-          if (target) {
-            console.log(`Dropped ${source?.id} onto ${target.id}`);
-            setTarget(String(target.id));
-          } else {
-            console.log("Dropped outside");
-            setTarget(undefined);
-          }
-        }}
-      >
-        {!target ? draggable : null}
-
-        <div className="flex gap-6">
-          {targets.map((id) => (
-            <Droppable key={id} id={id}>
-              {target === id ? draggable : `Droppable ${id}`}
-            </Droppable>
-          ))}
+          <p className="text-muted-foreground">
+            Overview of team and tasks.
+          </p>
         </div>
-      </DragDropProvider>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+
+            return (
+              <Card key={stat.title}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">
+                        {stat.title}
+                      </p>
+
+                      <p className="text-2xl font-bold">
+                        {stat.value}
+                      </p>
+
+                      <p className="text-xs text-muted-foreground">
+                        {stat.description}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg bg-muted p-3">
+                      <Icon className="size-5" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2 mb-0">
+          <DonutChart
+            data={data.taskStatus.map((item, index) => ({
+              ...item,
+              color: ["#0088FE", "#00C49F", "#FFBB28"][index],
+            }))}
+          />
+
+          <BarChartCard
+            labels={data.monthly.map((item) => item.month)}
+            seriesData={[
+              {
+                id: "0",
+                label: "Created",
+                data: data.monthly.map((item) => item.created),
+              },
+              {
+                id: "1",
+                label: "Completed",
+                data: data.monthly.map((item) => item.completed),
+                barLabel: "value",
+              },
+              {
+                id: "2",
+                label: "Pending",
+                data: data.monthly.map((item) => item.created - item.completed),
+                barLabel: "value",
+              },
+            ]}
+          />
+
+          <StackedAreaChart
+            labels={data.monthly.map((item) => item.month)}
+            seriesData={[
+              {
+                data: data.monthly.map((item) => item.created),
+                label: "Created",
+                area: true,
+                stack: "total",
+              },
+              {
+                data: data.monthly.map((item) => item.completed),
+                label: "Completed",
+                area: true,
+                stack: "total",
+              },
+              {
+                data: data.monthly.map((item) => item.created - item.completed),
+                label: "Pending",
+                area: true,
+                stack: "total",
+              },
+            ]}
+          />
+        </div>
+      </div>
     </main>
   );
 }
+

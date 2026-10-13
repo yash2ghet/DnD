@@ -1,5 +1,6 @@
 "use client";
 
+import { axisClasses } from "@mui/x-charts/ChartsAxis";
 import { BarChart, barClasses } from "@mui/x-charts/BarChart";
 import {
   Card,
@@ -8,18 +9,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const settings = {
-  xAxis: [{ data: ["Group A", "Group B", "Group C"] }],
-  series: [
-    { id: "0", data: [4, 3, 5] },
-    { id: "1", data: [1, 6, 3] },
-    { id: "2", data: [2, 5, 6], barLabel: "value" as const },
-  ],
-  height: 270,
-  margin: { left: 0 },
-} as const;
+type Props = {
+  labels: string[];
+  seriesData: {
+    id: string;
+    data: number[];
+    label?: string;
+    barLabel?: "value";
+  }[];
+};
 
-export default function BarChartCard() {
+export default function BarChartCard({
+  labels,
+  seriesData,
+}: Props) {
   return (
     <Card className="shadow-none">
       <CardHeader>
@@ -31,9 +34,12 @@ export default function BarChartCard() {
         </p>
       </CardHeader>
 
-      <CardContent className="px-2">
+      <CardContent className="px-2 text-foreground">
         <BarChart
-          {...settings}
+          xAxis={[{ data: labels }]}
+          series={seriesData}
+          height={270}
+          margin={{ left: 0 }}
           sx={{
             [`& .${barClasses.series}[data-series="1"] .${barClasses.element}`]:
               {
@@ -43,6 +49,14 @@ export default function BarChartCard() {
               {
                 fontWeight: "bold",
               },
+            [`& .${axisClasses.tickLabel}`]: { fill: "currentColor" },
+            [`& .${axisClasses.line}, & .${axisClasses.tick}`]: { stroke: "currentColor" },
+            "& .MuiChartsLegend-root, & .MuiChartsLegend-root *": {
+              color: "#fff",
+            },
+            "& .MuiChartsLegend-root text": {
+              fill: "#fff",
+            },
           }}
         >
           <defs>
